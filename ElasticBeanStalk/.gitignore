@@ -1,0 +1,16 @@
+.terraform/
+terraform.tfvars
+terraform.tfstate.backup
+terraform.tfstate
+.terraform.lock.hcl
+flask_app.zip
+ElasticBeanStalk/.terraform/providers/registry.terraform.io/hashicorp/aws/5.4.0/linux_amd64/terraform-provider-aws_v5.4.0_x5
+
+.terraform/
+id_rsa.pub
+id_rsa
+terraform.tfvars
+terraform.tfstate.backup
+terraform.tfstate
+.terraform.lock.hcl
+flask_app.zip
