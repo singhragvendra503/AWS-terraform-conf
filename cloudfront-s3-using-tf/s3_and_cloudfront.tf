@@ -1,17 +1,33 @@
 
 # Create s3 bucket
-resource "aws_s3_bucket" "demo_bucket" {
+resource "aws_s3_bucket" "this" {
   bucket = var.bucket_name
-  acl    = "private"
   tags = {
     Name = "My bucket"
   }
 }
 
+resource "aws_s3_bucket_ownership_controls" "this" {
+  bucket = aws_s3_bucket.this.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
 
+resource "aws_s3_bucket_acl" "example" {
+  depends_on = [ aws_s3_bucket_ownership_controls.this ]
+  bucket = aws_s3_bucket.this.id
+  acl    = "private"
+}
+resource "aws_s3_bucket_versioning" "this" {
+  bucket = aws_s3_bucket.this.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
 # Create CloudFront origin access control
 resource "aws_cloudfront_origin_access_control" "demo_origin_access_control" {
-  name                            = "${aws_s3_bucket.demo_bucket.id}.s3.us-east-1.amazonaws.com"
+  name                            = "${aws_s3_bucket.this.id}.s3.us-east-1.amazonaws.com"
   origin_access_control_origin_type = "s3"
   signing_behavior                = "no-override"
   signing_protocol                = "sigv4"
@@ -20,9 +36,9 @@ resource "aws_cloudfront_origin_access_control" "demo_origin_access_control" {
 # Create CloudFront distribution
 resource "aws_cloudfront_distribution" "demo_distribution" {
   origin {
-    domain_name              = aws_s3_bucket.demo_bucket.bucket_regional_domain_name
+    domain_name              = aws_s3_bucket.this.bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.demo_origin_access_control.id
-    origin_id                = "${aws_s3_bucket.demo_bucket.id}.s3.us-east-1.amazonaws.com"
+    origin_id                = "${aws_s3_bucket.this.id}.s3.us-east-1.amazonaws.com"
   }
 
   enabled             = true
@@ -33,7 +49,7 @@ resource "aws_cloudfront_distribution" "demo_distribution" {
   default_cache_behavior {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "${aws_s3_bucket.demo_bucket.id}.s3.us-east-1.amazonaws.com"
+    target_origin_id = "${aws_s3_bucket.this.id}.s3.us-east-1.amazonaws.com"
 
     forwarded_values {
       query_string = false
@@ -82,7 +98,7 @@ resource "aws_cloudfront_distribution" "demo_distribution" {
 
 # Grant read permission to the CloudFront origin access identity
 resource "aws_s3_bucket_policy" "demo_website_bucket_policy" {
-  bucket = aws_s3_bucket.demo_bucket.id
+  bucket = aws_s3_bucket.this.id
 
   policy = <<EOF
 {
@@ -96,10 +112,10 @@ resource "aws_s3_bucket_policy" "demo_website_bucket_policy" {
                 "Service": "cloudfront.amazonaws.com"
             },
             "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::${aws_s3_bucket.demo_bucket.id}/*",
+            "Resource": "arn:aws:s3:::${aws_s3_bucket.this.id}/*",
             "Condition": {
                 "StringEquals": {
-                    "AWS:SourceArn": "arn:aws:cloudfront::003781071132:distribution/${aws_cloudfront_distribution.demo_distribution.id}"
+                    "AWS:SourceArn": "arn:aws:cloudfront::750548017325:distribution/${aws_cloudfront_distribution.demo_distribution.id}"
                 }
             }
         }
